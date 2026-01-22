@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mock Test Platform</title>
+
+<style>
+:root{
+  --bg:#0e141e;--card:#161c28;--border:#2a3142;
+  --text:#e7e7e7;--muted:#9aa4af;
+  --green:#2ec866;--red:#ff6b6b;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background:var(--bg);
+  color:var(--text);
+}
+header{
+  padding:16px 28px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  justify-content:space-between;
+}
+.brand{font-size:13px;letter-spacing:2px;color:var(--muted)}
+.timer{color:var(--green)}
+.hidden{display:none}
+
+.tabs{
+  display:flex;
+  border-bottom:1px solid var(--border)
+}
+.tab{
+  padding:14px 22px;
+  cursor:pointer;
+  font-size:13px;
+  color:var(--muted);
+  border-bottom:2px solid transparent;
+}
+.tab.active{
+  color:var(--green);
+  border-bottom-color:var(--green)
+}
+
+main{max-width:900px;margin:0 auto;padding:36px 24px}
+
+.progress{
+  height:2px;
+  background:var(--border);
+  margin-bottom:28px
+}
+.progress span{
+  display:block;
+  height:100%;
+  width:0;
+  background:var(--green)
+}
+
+.qnav{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(36px,1fr));
+  gap:8px;
+  margin-bottom:28px
+}
+.qbox{
+  height:36px;
+  border:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  cursor:pointer;
+  color:var(--muted)
+}
+.qbox.answered{border-color:#888;color:#888}
+.qbox.active{border-color:var(--green);color:var(--green)}
+
+.card{
+  border:1px solid var(--border);
+  background:var(--card);
+  padding:26px 28px;
+  margin-bottom:26px
+}
+.q-title{font-size:15px;margin-bottom:18px}
+
+.options label{
+  display:block;
+  padding:14px;
+  margin-bottom:10px;
+  border:1px solid var(--border);
+  cursor:pointer
+}
+.options label.correct{border-color:var(--green)}
+.options label.wrong{border-color:var(--red)}
+
+button{
+  padding:14px 42px;
+  letter-spacing:2px;
+  font-size:12px;
+  cursor:pointer;
+  border:1px solid var(--green);
+  background:transparent;
+  color:var(--green)
+}
+button:hover{background:var(--green);color:#08140f}
+
+.landing{max-width:520px;margin:120px auto}
+.result{
+  max-width:900px;
+  margin:80px auto;
+  border:1px solid var(--green);
+  padding:30px
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="brand">Mock · Assessment · Platform</div>
+  <div class="timer hidden" id="timer">60:00</div>
+</header>
+
+<!-- LANDING -->
+<div id="landing" class="card landing">
+  <div class="q-title">Select Test Set</div>
+  <select id="setSelect" style="width:100%;padding:12px;background:transparent;color:var(--text);border:1px solid var(--border)">
+    <option value="1">Set 1</option>
+    <option value="2">Set 2</option>
+    <option value="3">Set 3</option>
+  </select>
+  <br><br>
+  <button id="startBtn">Start Test</button>
+</div>
+
+<!-- TEST -->
+<div id="test" class="hidden">
+  <div class="tabs">
+    <div class="tab active">Hardware</div>
+    <div class="tab">Windows 11</div>
+    <div class="tab">Windows Server</div>
+    <div class="tab">Linux</div>
+  </div>
+
+  <main>
+    <div class="progress"><span id="progressBar"></span></div>
+    <div id="qnav" class="qnav"></div>
+    <div id="questionArea"></div>
+    <button id="nextBtn">Next Section</button>
+  </main>
+</div>
+
+<!-- RESULT -->
+<div id="result" class="result hidden">
+  <h3 id="score"></h3>
+  <div id="review"></div>
+</div>
+
+<script>
+/* ===== REALISTIC POOLS (replace freely) ===== */
+
+const HARDWARE = [
+
+  {
+    q: "What does POST stand for in computer systems?",
+    options: [
+      "Power On Self Test",
+      "Primary Operating System Test",
+      "Peripheral Output System Test",
+      "Programmed On System Test"
+    ],
+    answer: 0
+  },
+
+  {
+    q: "Which firmware interface is the modern replacement for BIOS?",
+    options: [
+      "CMOS",
+      "UEFI",
+      "POST",
+      "MBR"
+    ],
+    answer: 1
+  },
+
+  {
+    q: "Which component stores system configuration settings?",
+    options: [
+      "ROM",
+      "RAM",
+      "CMOS",
+      "Cache memory"
+    ],
+    answer: 2
+  },
+
+  {
+    q: "Which battery maintains BIOS/UEFI settings when the system is powered off?",
+    options: [
+      "Lithium battery",
+      "CMOS battery",
+      "Power supply",
+      "UPS battery"
+    ],
+    answer: 1
+  },
+
+  {
+    q: "Which type of memory is non-volatile?",
+    options: [
+      "RAM",
+      "Cache",
+      "ROM",
+      "Register"
+    ],
+    answer: 2
+  },
+
+  {
+    q: "What is the primary function of firmware?",
+    options: [
+      "Run application software",
+      "Initialize hardware during boot",
+      "Manage user files",
+      "Provide internet connectivity"
+    ],
+    answer: 1
+  },
+
+  {
+    q: "Which partition table format supports disks larger than 2 TB?",
+    options: [
+      "MBR",
+      "FAT32",
+      "GPT",
+      "NTFS"
+    ],
+    answer: 2
+  },
+
+  {
+    q: "Which partitioning scheme is required for UEFI systems?",
+    options: [
+      "MBR",
+      "GPT",
+      "EXT4",
+      "FAT16"
+    ],
+    answer: 1
+  },
+
+  {
+    q: "What is the purpose of the bootstrap loader?",
+    options: [
+      "Load operating system into memory",
+      "Initialize hardware",
+      "Run POST",
+      "Manage disk partitions"
+    ],
+    answer: 0
+  },
+
+  {
+    q: "Which component executes the POST process?",
+    options: [
+      "Operating System",
+      "Boot Loader",
+      "Firmware",
+      "Hard Disk"
+    ],
+    answer: 2
+  },
+
+  {
+    q: "Which storage device has the fastest access speed?",
+    options: [
+      "HDD",
+      "SSD",
+      "NVMe SSD",
+      "Optical Drive"
+    ],
+    answer: 2
+  },
+
+  {
+    q: "Which hardware component directly performs arithmetic operations?",
+    options: [
+      "RAM",
+      "ALU",
+      "Cache",
+      "Motherboard"
+    ],
+    answer: 1
+  },
+
+  {
+    q: "Which memory is closest to the CPU?",
+    options: [
+      "RAM",
+      "Cache",
+      "ROM",
+      "Hard Disk"
+    ],
+    answer: 1
+  },
+
+  {
+    q: "What does UEFI stand for?",
+    options: [
+      "Unified Extensible Firmware Interface",
+      "Universal External Firmware Interface",
+      "Unified Embedded Firmware Interface",
+      "Universal Extensible File Interface"
+    ],
+    answer: 0
+  },
+
+  {
+    q: "Which bus connects CPU to RAM?",
+    options: [
+      "Data bus",
+      "Control bus",
+      "System bus",
+      "Expansion bus"
+    ],
+    answer: 2
+  },
+
+  {
+    q: "Which type of port is typically used for modern display output?",
+    options: [
+      "VGA",
+      "PS/2",
+      "HDMI",
+      "Serial"
+    ],
+    answer: 2
+  },
+
+  {
+    q: "Which component is responsible for heat dissipation?",
+    options: [
+      "Power Supply",
+      "Heat Sink",
+      "RAM",
+      "Motherboard"
+    ],
+    answer: 1
+  },
+
+  {
+    q: "Which storage technology uses flash memory?",
+    options: [
+      "HDD",
+      "SSD",
+      "DVD",
+      "Tape Drive"
+    ],
+    answer: 1
+  },
+
+  {
+    q: "Which BIOS setting determines boot device order?",
+    options: [
+      "Security",
+      "Advanced",
+      "Boot",
+      "Power"
+    ],
+    answer: 2
+  },
+
+  {
+    q: "Which interface is used by NVMe drives?",
+    options: [
+      "SATA",
+      "PCIe",
+      "USB",
+      "IDE"
+    ],
+    answer: 1
+  },
+
+  {
+    q: "Which hardware component supplies power to all parts of a computer?",
+    options: [
+      "UPS",
+      "SMPS",
+      "Battery",
+      "Voltage Regulator"
+    ],
+    answer: 1
+  },
+
+  {
+    q: "Which unit measures CPU clock speed?",
+    options: [
+      "GHz",
+      "MB",
+      "RPM",
+      "bps"
+    ],
+    answer: 0
+  },
+
+  {
+    q: "Which memory type is volatile?",
+    options: [
+      "ROM",
+      "Flash",
+      "RAM",
+      "SSD"
+    ],
+    answer: 2
+  },
+
+  {
+    q: "Which component manages communication between CPU and peripherals?",
+    options: [
+      "Southbridge",
+      "Northbridge",
+      "Chipset",
+      "BIOS"
+    ],
+    answer: 2
+  },
+
+  {
+    q: "Which expansion slot is commonly used for graphics cards?",
+    options: [
+      "PCI",
+      "PCIe x16",
+      "AGP",
+      "ISA"
+    ],
+    answer: 1
+  }
+
+];
+const WIN11 = [
+
+  {
+    q: "Which Windows 11 edition supports BitLocker device encryption?",
+    options: ["Home", "Pro", "SE", "Education"],
+    answer: 1
+  },
+
+  {
+    q: "Which hardware requirement is mandatory for installing Windows 11?",
+    options: ["TPM 2.0", "DVD Drive", "Legacy BIOS", "IDE Controller"],
+    answer: 0
+  },
+
+  {
+    q: "Which tool is used to manage startup applications in Windows 11?",
+    options: ["Services", "Task Manager", "Device Manager", "Control Panel"],
+    answer: 1
+  },
+
+  {
+    q: "Which utility displays real-time CPU and memory usage?",
+    options: ["Event Viewer", "Task Manager", "Performance Monitor", "System Information"],
+    answer: 1
+  },
+
+  {
+    q: "Which Windows 11 feature helps isolate critical system processes?",
+    options: ["Windows Sandbox", "Core Isolation", "Hyper-V", "SmartScreen"],
+    answer: 1
+  },
+
+  {
+    q: "Which snap-in is used to manage disks and partitions?",
+    options: ["Device Manager", "Disk Management", "Storage Spaces", "File Explorer"],
+    answer: 1
+  },
+
+  {
+    q: "Which file system is default for Windows 11 installations?",
+    options: ["FAT32", "exFAT", "NTFS", "ReFS"],
+    answer: 2
+  },
+
+  {
+    q: "Which feature allows running a temporary virtualized desktop?",
+    options: ["Hyper-V", "Windows Sandbox", "Remote Desktop", "WSL"],
+    answer: 1
+  },
+
+  {
+    q: "Which security feature blocks untrusted applications?",
+    options: ["BitLocker", "SmartScreen", "Firewall", "Defender ATP"],
+    answer: 1
+  },
+
+  {
+    q: "Which command opens the Local Group Policy Editor?",
+    options: ["gpedit.msc", "secpol.msc", "services.msc", "eventvwr.msc"],
+    answer: 0
+  },
+
+  {
+    q: "Which Windows 11 component protects against malware?",
+    options: ["Windows Defender", "Smart App Control", "Firewall", "All of the above"],
+    answer: 3
+  },
+
+  {
+    q: "Which setting controls automatic Windows Updates?",
+    options: ["Services", "Control Panel", "Windows Update", "Task Scheduler"],
+    answer: 2
+  },
+
+  {
+    q: "Which tool is used to view system logs?",
+    options: ["Task Manager", "Event Viewer", "Resource Monitor", "Performance Monitor"],
+    answer: 1
+  },
+
+  {
+    q: "Which Windows 11 feature encrypts the entire drive?",
+    options: ["EFS", "BitLocker", "NTFS", "Secure Boot"],
+    answer: 1
+  },
+
+  {
+    q: "Which feature ensures only trusted software loads during boot?",
+    options: ["Secure Boot", "Fast Startup", "TPM", "Windows Defender"],
+    answer: 0
+  },
+
+  {
+    q: "Which app replaces Control Panel for most system settings?",
+    options: ["Settings", "System Configuration", "Device Manager", "PowerShell"],
+    answer: 0
+  },
+
+  {
+    q: "Which Windows 11 edition is commonly used in enterprises?",
+    options: ["Home", "Pro", "Enterprise", "SE"],
+    answer: 2
+  },
+
+  {
+    q: "Which shortcut opens Task Manager directly?",
+    options: ["Ctrl+Alt+Del", "Ctrl+Shift+Esc", "Alt+F4", "Win+X"],
+    answer: 1
+  },
+
+  {
+    q: "Which Windows 11 feature allows Linux distributions to run natively?",
+    options: ["Hyper-V", "WSL", "Sandbox", "Docker"],
+    answer: 1
+  },
+
+  {
+    q: "Which storage feature provides disk redundancy using software?",
+    options: ["RAID BIOS", "Disk Management", "Storage Spaces", "BitLocker"],
+    answer: 2
+  },
+
+  {
+    q: "Which Windows tool shows detailed system hardware information?",
+    options: ["dxdiag", "msinfo32", "perfmon", "diskpart"],
+    answer: 1
+  },
+
+  {
+    q: "Which account type is recommended for enterprise-managed devices?",
+    options: ["Local account", "Microsoft account", "Domain account", "Guest account"],
+    answer: 2
+  },
+
+  {
+    q: "Which Windows 11 feature helps protect credentials from theft?",
+    options: ["Credential Guard", "BitLocker", "SmartScreen", "Firewall"],
+    answer: 0
+  },
+
+  {
+    q: "Which Windows 11 feature allows multiple desktops?",
+    options: ["Snap Layouts", "Virtual Desktops", "Timeline", "Task View"],
+    answer: 1
+  },
+
+  {
+    q: "Which snap layout feature improves window organization?",
+    options: ["Task View", "Snap Assist", "Virtual Desktop", "Widgets"],
+    answer: 1
+  },
+
+  {
+    q: "Which Windows 11 tool is used to manage drivers?",
+    options: ["Disk Management", "Device Manager", "Event Viewer", "Services"],
+    answer: 1
+  },
+
+  {
+    q: "Which security chip works with BitLocker for key storage?",
+    options: ["BIOS", "CMOS", "TPM", "UEFI"],
+    answer: 2
+  },
+
+  {
+    q: "Which Windows 11 feature displays personalized news and weather?",
+    options: ["Task View", "Widgets", "Timeline", "Action Center"],
+    answer: 1
+  },
+
+  {
+    q: "Which command-line shell is modern and object-oriented in Windows 11?",
+    options: ["cmd", "PowerShell", "bash", "zsh"],
+    answer: 1
+  }
+
+];
+const SERVER = [
+{
+    q: "Which Windows Server role is required to manage domain authentication?",
+    options: ["DNS Server", "AD DS", "DHCP Server", "File Server"],
+    answer: 1
+  },
+
+  {
+    q: "Which service resolves hostnames to IP addresses in a domain?",
+    options: ["DHCP", "DNS", "WINS", "AD DS"],
+    answer: 1
+  },
+
+  {
+    q: "Which role assigns IP addresses automatically to clients?",
+    options: ["DNS Server", "AD DS", "DHCP Server", "File Server"],
+    answer: 2
+  },
+
+  {
+    q: "Which tool is used to install roles and features in Windows Server?",
+    options: ["Control Panel", "Server Manager", "Settings", "Task Manager"],
+    answer: 1
+  },
+
+  {
+    q: "Which protocol is primarily used for file sharing in Windows Server?",
+    options: ["FTP", "SMB", "NFS", "HTTP"],
+    answer: 1
+  },
+
+  {
+    q: "Which Active Directory component defines a security boundary?",
+    options: ["Forest", "OU", "Site", "Group"],
+    answer: 0
+  },
+
+  {
+    q: "Which container is used to apply Group Policies to users and computers?",
+    options: ["Domain", "Forest", "Organizational Unit", "Site"],
+    answer: 2
+  },
+
+  {
+    q: "Which Group Policy setting enforces password complexity?",
+    options: ["Local Policy", "Account Policy", "Audit Policy", "User Rights Assignment"],
+    answer: 1
+  },
+
+  {
+    q: "Which DNS record maps a hostname to an IP address?",
+    options: ["PTR", "A", "MX", "CNAME"],
+    answer: 1
+  },
+
+  {
+    q: "Which DNS record maps an IP address to a hostname?",
+    options: ["A", "MX", "PTR", "CNAME"],
+    answer: 2
+  },
+
+  {
+    q: "Which command-line tool manages Active Directory objects?",
+    options: ["dnsmgmt.msc", "dsa.msc", "dsadd", "netstat"],
+    answer: 2
+  },
+
+  {
+    q: "Which service synchronizes time in an Active Directory domain?",
+    options: ["NTP", "W32Time", "TimeSync", "Chrony"],
+    answer: 1
+  },
+
+  {
+    q: "Which Windows Server feature allows running virtual machines?",
+    options: ["Containers", "Hyper-V", "WSL", "Sandbox"],
+    answer: 1
+  },
+
+  {
+    q: "Which Hyper-V component defines virtual hardware settings?",
+    options: ["Virtual Switch", "Virtual Machine", "Checkpoint", "VHD"],
+    answer: 1
+  },
+
+  {
+    q: "Which type of virtual switch allows VM-to-VM and host communication?",
+    options: ["External", "Internal", "Private", "Isolated"],
+    answer: 1
+  },
+
+  {
+    q: "Which protocol is used by DHCP to lease IP addresses?",
+    options: ["TCP", "UDP", "ICMP", "ARP"],
+    answer: 1
+  },
+
+  {
+    q: "Which port does DNS primarily use?",
+    options: ["53", "67", "68", "389"],
+    answer: 0
+  },
+
+  {
+    q: "Which port is used by DHCP server to listen for requests?",
+    options: ["53", "67", "68", "389"],
+    answer: 1
+  },
+
+  {
+    q: "Which feature allows centralized management of servers?",
+    options: ["Server Manager", "PowerShell ISE", "Control Panel", "Event Viewer"],
+    answer: 0
+  },
+
+  {
+    q: "Which tool is used to view security and system logs?",
+    options: ["Task Manager", "Event Viewer", "Performance Monitor", "Services"],
+    answer: 1
+  },
+
+  {
+    q: "Which Active Directory role ensures schema consistency?",
+    options: ["RID Master", "PDC Emulator", "Schema Master", "Infrastructure Master"],
+    answer: 2
+  },
+
+  {
+    q: "Which FSMO role manages password changes and account lockouts?",
+    options: ["RID Master", "Schema Master", "PDC Emulator", "Infrastructure Master"],
+    answer: 2
+  },
+
+  {
+    q: "Which type of group is used to assign permissions to resources?",
+    options: ["Distribution Group", "Security Group", "Universal Group", "Dynamic Group"],
+    answer: 1
+  },
+
+  {
+    q: "Which policy controls user logon rights?",
+    options: ["Audit Policy", "User Rights Assignment", "Account Policy", "Security Options"],
+    answer: 1
+  },
+
+  {
+    q: "Which service replicates Active Directory data between domain controllers?",
+    options: ["DFS", "FRS", "AD Replication", "RPC"],
+    answer: 3
+  },
+
+  {
+    q: "Which command updates Group Policy immediately?",
+    options: ["gpupdate /force", "gpedit.msc", "secpol.msc", "net policy"],
+    answer: 0
+  },
+
+  {
+    q: "Which server role provides centralized file access and sharing?",
+    options: ["DNS Server", "File Server", "DHCP Server", "Web Server"],
+    answer: 1
+  },
+
+  {
+    q: "Which Windows Server edition supports large-scale enterprise environments?",
+    options: ["Standard", "Essentials", "Datacenter", "Foundation"],
+    answer: 2
+  },
+
+  {
+    q: "Which feature allows automation and scripting of server tasks?",
+    options: ["Command Prompt", "PowerShell", "Task Scheduler", "Services"],
+    answer: 1
+  }  
+  ];
+const LINUX = [
+    {
+    q: "Which directory is the root of the Linux filesystem hierarchy?",
+    options: ["/root", "/home", "/", "/boot"],
+    answer: 2
+  },
+
+  {
+    q: "Which directory contains system configuration files?",
+    options: ["/bin", "/etc", "/usr", "/var"],
+    answer: 1
+  },
+
+  {
+    q: "Which directory stores variable data such as logs?",
+    options: ["/tmp", "/etc", "/var", "/opt"],
+    answer: 2
+  },
+
+  {
+    q: "Which directory typically contains user home directories?",
+    options: ["/root", "/usr", "/home", "/srv"],
+    answer: 2
+  },
+
+  {
+    q: "Which directory contains essential binary commands?",
+    options: ["/bin", "/lib", "/sbin", "/opt"],
+    answer: 0
+  },
+
+  {
+    q: "Which permission allows a user to enter a directory?",
+    options: ["Read", "Write", "Execute", "Sticky"],
+    answer: 2
+  },
+
+  {
+    q: "What does permission rwxr-xr-- represent in numeric form?",
+    options: ["754", "755", "744", "764"],
+    answer: 0
+  },
+
+  {
+    q: "Which command is used to change file permissions?",
+    options: ["chown", "chmod", "chgrp", "setfacl"],
+    answer: 1
+  },
+
+  {
+    q: "Which command changes file ownership?",
+    options: ["chmod", "chgrp", "chown", "ls"],
+    answer: 2
+  },
+
+  {
+    q: "Which command changes group ownership of a file?",
+    options: ["chmod", "chgrp", "usermod", "groupadd"],
+    answer: 1
+  },
+
+  {
+    q: "Which command lists files including hidden files?",
+    options: ["ls", "ls -l", "ls -a", "ls -h"],
+    answer: 2
+  },
+
+  {
+    q: "Which command displays disk usage of files and directories?",
+    options: ["df", "du", "lsblk", "mount"],
+    answer: 1
+  },
+
+  {
+    q: "Which command shows filesystem disk space usage?",
+    options: ["du", "df", "ls", "blkid"],
+    answer: 1
+  },
+
+  {
+    q: "Which command displays block devices?",
+    options: ["df", "lsblk", "mount", "du"],
+    answer: 1
+  },
+
+  {
+    q: "Which command is used to copy files?",
+    options: ["mv", "cp", "rsync", "copy"],
+    answer: 1
+  },
+
+  {
+    q: "Which command is used to move or rename files?",
+    options: ["mv", "cp", "rename", "rm"],
+    answer: 0
+  },
+
+  {
+    q: "Which command deletes files?",
+    options: ["rm", "del", "erase", "unlink"],
+    answer: 0
+  },
+
+  {
+    q: "Which command shows the current working directory?",
+    options: ["pwd", "cd", "ls", "whoami"],
+    answer: 0
+  },
+
+  {
+    q: "Which command changes the current directory?",
+    options: ["pwd", "ls", "cd", "chdir"],
+    answer: 2
+  },
+
+  {
+    q: "Which file contains user account information?",
+    options: ["/etc/shadow", "/etc/passwd", "/etc/group", "/etc/profile"],
+    answer: 1
+  },
+
+  {
+    q: "Which file stores encrypted user passwords?",
+    options: ["/etc/passwd", "/etc/group", "/etc/shadow", "/etc/login.defs"],
+    answer: 2
+  },
+
+  {
+    q: "Which command shows currently logged-in users?",
+    options: ["whoami", "who", "users", "id"],
+    answer: 1
+  },
+
+  {
+    q: "Which command displays the current user ID?",
+    options: ["who", "id", "groups", "whoami"],
+    answer: 1
+  },
+
+  {
+    q: "Which command is used to view running processes?",
+    options: ["ps", "top", "htop", "all of the above"],
+    answer: 3
+  },
+
+  {
+    q: "Which command is used to terminate a process?",
+    options: ["stop", "kill", "end", "terminate"],
+    answer: 1
+  },
+
+  {
+    q: "Which bootloader is commonly used in RHEL systems?",
+    options: ["LILO", "GRUB", "Syslinux", "UEFI Shell"],
+    answer: 1
+  },
+
+  {
+    q: "Which file stores GRUB configuration in RHEL?",
+    options: ["/boot/grub2/grub.cfg", "/etc/grub.conf", "/boot/grub/menu.lst", "/etc/default/grub"],
+    answer: 0
+  },
+
+  {
+    q: "Which command displays system uptime?",
+    options: ["uptime", "time", "top", "who"],
+    answer: 0
+  },
+
+  {
+    q: "Which systemd target is equivalent to runlevel 3?",
+    options: ["graphical.target", "multi-user.target", "rescue.target", "emergency.target"],
+    answer: 1
+  }
+
+  ];
+
+const SETS={
+  1:{hardware:[...Array(15).keys()],win11:[...Array(25).keys()],server:[...Array(30).keys()],linux:[...Array(30).keys()]},
+  2:{hardware:[...Array(15).keys()].map(i=>(i+5)%25),win11:[...Array(25).keys()],server:[...Array(30).keys()],linux:[...Array(30).keys()]},
+  3:{hardware:[...Array(15).keys()].map(i=>(i+10)%25),win11:[...Array(25).keys()],server:[...Array(30).keys()],linux:[...Array(30).keys()]}
+};
+
+/* ===== CORE LOGIC ===== */
+
+const SECTIONS=[15,25,30,30];
+let QUESTIONS=[],currentTab=0,time=3600,timer;
+
+const el={
+  landing:landing,
+  test:test,
+  result:result,
+  timer:timer,
+  qnav:qnav,
+  area:questionArea,
+  bar:progressBar,
+  score:score,
+  review:review
+};
+
+document.getElementById("startBtn").onclick=startTest;
+document.getElementById("nextBtn").onclick=nextSection;
+document.querySelectorAll(".tab").forEach((t,i)=>t.onclick=()=>switchTab(i));
+
+function startTest(){
+  const id=setSelect.value;
+  QUESTIONS=[
+    ...SETS[id].hardware.map(i=>({...HARDWARE[i],sel:null})),
+    ...SETS[id].win11.map(i=>({...WIN11[i],sel:null})),
+    ...SETS[id].server.map(i=>({...SERVER[i],sel:null})),
+    ...SETS[id].linux.map(i=>({...LINUX[i],sel:null}))
+  ];
+  currentTab=0; time=3600;
+  landing.classList.add("hidden");
+  test.classList.remove("hidden");
+  timer.classList.remove("hidden");
+  timerRun();
+  switchTab(0);
+}
+
+function timerRun(){
+  clearInterval(timer);
+  timer=setInterval(()=>{
+    time--;
+    timer.textContent=`${String(time/60|0).padStart(2,"0")}:${String(time%60).padStart(2,"0")}`;
+    if(time<=0)submitTest();
+  },1000);
+}
+
+function render(){
+  el.area.innerHTML=""; el.qnav.innerHTML="";
+  const start=SECTIONS.slice(0,currentTab).reduce((a,b)=>a+b,0);
+  const count=SECTIONS[currentTab];
+
+  for(let i=0;i<count;i++){
+    const idx=start+i;
+    const q=QUESTIONS[idx];
+
+    const box=document.createElement("div");
+    box.className="qbox"+(q.sel!==null?" answered":"")+(i===0?" active":"");
+    box.textContent=i+1;
+    box.onclick=()=>document.getElementById("q"+idx).scrollIntoView({behavior:"smooth"});
+    el.qnav.appendChild(box);
+
+    const card=document.createElement("div");
+    card.className="card";
+    card.id="q"+idx;
+    card.innerHTML=`<div class="q-title">${i+1}. ${q.q}</div>`;
+    const opts=document.createElement("div");
+    opts.className="options";
+
+    q.options.forEach((o,j)=>{
+      const lab=document.createElement("label");
+      lab.innerHTML=`<input type="radio" name="q${idx}"> ${o}`;
+      if(q.sel===j) lab.classList.add("correct");
+      lab.onclick=()=>{
+        q.sel=j;
+        render();
+      };
+      opts.appendChild(lab);
+    });
+
+    card.appendChild(opts);
+    el.area.appendChild(card);
+  }
+
+  el.bar.style.width=(QUESTIONS.filter(q=>q.sel!==null).length/QUESTIONS.length*100)+"%";
+}
+
+function switchTab(i){
+  currentTab=i;
+  document.querySelectorAll(".tab").forEach((t,j)=>t.classList.toggle("active",j===i));
+  render();
+}
+
+function nextSection(){
+  currentTab<3?switchTab(currentTab+1):submitTest();
+}
+
+function submitTest(){
+  clearInterval(timer);
+  test.classList.add("hidden");
+  result.classList.remove("hidden");
+
+  let correct=0;
+  el.review.innerHTML="";
+  QUESTIONS.forEach((q,i)=>{
+    if(q.sel===q.answer) correct++;
+    el.review.innerHTML+=`
+      <div class="card">
+        <b>${i+1}. ${q.q}</b><br>
+        Your: ${q.sel!=null?q.options[q.sel]:"Not answered"}<br>
+        Correct: ${q.options[q.answer]}
+      </div>`;
+  });
+  el.score.textContent=`Score ${correct} / ${QUESTIONS.length} (${Math.round(correct/QUESTIONS.length*100)}%)`;
+}
+</script>
+
+</body>
+</html>
