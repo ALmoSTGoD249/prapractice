@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PRA Easy – Interactive Mock Test</title>
+
+<style>
+:root{
+/* LIGHT MODE */
+--bg:#F5F5DC;
+--card:#ffffff;
+--panel:#f1f1e6;
+--border:#d6d6c8;
+
+--text:#301934;
+--muted:#6b5f73;
+
+--accent:#9F2B68;
+--cta:#CC5500;
+
+/* STATUS */
+--green:#2e7d32;
+--red:#c62828;
+--yellow:#CC5500;
+}
+
+/* DARK MODE */
+[data-theme="dark"]{
+--bg:#301934;
+--card:#3a1f47;
+--panel:#2a1635;
+--border:#4a2b5e;
+
+--text:#F5F5DC;
+--muted:#cbbfd1;
+
+--accent:#9F2B68;
+--cta:#CC5500;
+}
+*{box-sizing:border-box}
+body{
+margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;
+background:var(--bg);color:var(--text);
+}
+header{
+  position:sticky;
+  top:0;
+  z-index:100;
+
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+
+  padding:6px 16px;        /* 🔑 small padding */
+  height:64px;             /* 🔑 fixed compact height */
+
+  background:linear-gradient(
+    180deg,
+    rgba(0,0,0,0.35),
+    rgba(0,0,0,0.15)
+  );
+
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(8px);
+}
+.timer{color:var(--green);font-weight:600;font-size:18px}
+main{display:flex;max-width:1300px;margin:0 auto}
+aside{
+width:260px;border-right:1px solid var(--border);
+padding:20px;position:sticky;top:64px;height:calc(100vh - 64px);overflow:auto;
+}
+aside h3{margin-top:0;font-size:16px;color:var(--muted)}
+.grid{
+display:grid;grid-template-columns:repeat(5,1fr);gap:8px;
+}
+.nav-btn{
+padding:8px;border-radius:6px;border:1px solid var(--border);
+background:var(--panel);color:var(--muted);cursor:pointer;
+font-size:13px;text-align:center;
+}
+.nav-btn.answered{border-color:var(--yellow);color:var(--yellow)}
+.nav-btn.correct{border-color:var(--green);color:var(--green)}
+.nav-btn.wrong{border-color:var(--red);color:var(--red)}
+section{
+flex:1;padding:30px 40px;
+}
+.progress{
+height:6px;background:#111;border-radius:6px;overflow:hidden;margin-bottom:20px;
+}
+.progress div{
+height:100%;width:0;background:linear-gradient(90deg,#2ec866,#1ba94c);
+transition:.3s;
+}
+.question{
+background:var(--card);border:1px solid var(--border);
+border-radius:10px;padding:22px;margin-bottom:24px;
+}
+.question b{display:block;margin-bottom:14px}
+.options label{
+display:block;padding:10px 12px;margin-bottom:8px;
+border-radius:8px;background:var(--panel);
+border:1px solid var(--border);cursor:pointer;transition:.2s;
+}
+.options label:hover{border-color:var(--green)}
+input{margin-right:10px;accent-color:var(--green)}
+.solution{
+display:none;margin-top:14px;padding:14px;
+background:var(--panel);border-left:4px solid var(--border);
+border-radius:8px;color:var(--muted);font-size:14px;
+}
+.correct{border-left-color:var(--green)}
+.wrong{border-left-color:var(--red)}
+button{
+display:block;margin:50px auto;padding:14px 48px;
+font-size:16px;font-weight:600;
+background:linear-gradient(135deg,#2ec866,#1ba94c);
+color:#06130c;border:none;border-radius:8px;cursor:pointer;
+}
+.result{
+display:none;background:var(--card);border-left:6px solid var(--green);
+padding:26px;border-radius:10px;margin-bottom:40px;
+}
+button:hover{
+  transform:translateY(-1px);
+  box-shadow:0 6px 18px rgba(0,0,0,.2);
+}
+
+.nav-btn{
+  transition:.2s ease;
+}
+
+.nav-btn:hover{
+  background:var(--accent);
+  color:#fff;
+  border-color:var(--accent);
+}
+
+.options label{
+  transition:.2s ease;
+}
+
+.options input:checked + span{
+  color:var(--accent);
+}
+
+.question{
+  box-shadow:0 10px 30px rgba(0,0,0,.15);
+}
+header b{
+  font-size:24px;
+  font-weight:600;
+}
+
+.timer{
+  font-size:14px;
+  font-weight:600;
+}
+</style>
+</head>
+
+<body data-theme="dark">
+
+<header>
+  <b>PRA Easy Mock Test</b>
+  <div class="timer" id="timer">60:00</div>
+</header>
+
+<main>
+  <aside>
+    <h3>Questions</h3>
+    <div class="grid" id="nav"></div>
+  </aside>
+
+  <section>
+    <div class="progress"><div id="progressBar"></div></div>
+    <div id="result" class="result"></div>
+    <form id="quizForm"></form>
+  </section>
+</main>
+
+<script>
+/* TIMER */
+let time=3600,submitted=false;
+const timerEl=document.getElementById("timer");
+
+const timer=setInterval(()=>{
+  time--;
+  timerEl.textContent=
+    String(Math.floor(time/60)).padStart(2,'0')+":"+
+    String(time%60).padStart(2,'0');
+
+  if(time<=0 && !submitted){
+    clearInterval(timer);
+    submitQuiz(true);
+  }
+},1000);
+
+/* Add Questions Here*/
+const questions = [
+
+/* ================= HARDWARE (1–12) ================= */
+
+["1 byte equals?",["4 bits","8 bits","16 bits","32 bits"],1,"1 byte = 8 bits."],
+["RAID 1 provides?",["Striping","Mirroring","Parity","Backup"],1,"RAID 1 mirrors data for redundancy."],
+["L1 cache is?",["Largest","Fastest and smallest","External","ROM"],1,"L1 cache is closest to CPU core."],
+["DDR stands for?",["Double Data Rate","Dynamic Disk RAM","Dual Data RAM","Direct Data RAM"],0,"DDR transfers data twice per cycle."],
+["Northbridge traditionally connects?",["CPU and RAM","USB","Printer","CMOS"],0,"Northbridge handles CPU-memory communication."],
+["SSD uses?",["Platters","Flash memory","Tape","Registers"],1,"SSD uses solid-state flash storage."],
+["PCIe is used for?",["Storage","High-speed expansion","BIOS","Cooling"],1,"PCIe connects high-speed expansion cards."],
+["BIOS POST checks?",["User password","Hardware components","Firewall","DNS"],1,"POST verifies hardware during boot."],
+["DIMM stands for?",["Dual Inline Memory Module","Dynamic Internal Module","Direct Internal Memory","Dual Internal Memory"],0,"DIMM is modern RAM module."],
+["SATA is?",["Parallel","Serial interface","Bus only","Cache"],1,"SATA is a serial storage interface."],
+["Multicore CPU means?",["Multiple CPUs","Multiple cores in one chip","Multiple RAM","Multiple BIOS"],1,"Multicore contains several cores."],
+["Impact printer example?",["Laser","Inkjet","Dot matrix","Thermal"],2,"Dot matrix strikes ribbon physically."],
+
+/* ================= WINDOWS CLIENT (13–28) ================= */
+
+["Safe Mode is used for?",["Gaming","Troubleshooting","Updating BIOS","Installing RAM"],1,"Safe Mode loads minimal drivers."],
+["SFC command repairs?",["Disk","System files","RAM","Firewall"],1,"SFC repairs corrupted system files."],
+["Task Manager monitors?",["CPU and memory","DNS","GPO","BIOS"],0,"Task Manager monitors performance."],
+["Windows Update provides?",["Drivers only","Security patches","RAM upgrade","BIOS flash"],1,"It installs updates and patches."],
+["BitLocker encrypts?",["RAM","Entire drive","BIOS","USB port"],1,"BitLocker provides full-disk encryption."],
+["UAC stands for?",["User Access Control","User Account Control","Unified Access Console","User Admin Console"],1,"UAC prevents unauthorized changes."],
+["PowerShell is used for?",["Gaming","Automation","Printing","BIOS"],1,"PowerShell automates admin tasks."],
+["CHKDSK checks?",["Network","Disk errors","Cache","DNS"],1,"CHKDSK scans disk integrity."],
+["Device Manager manages?",["Drivers","Files","DNS","Firewall"],0,"Device Manager manages hardware drivers."],
+["Storage Sense does?",["Encrypts disk","Auto cleanup","DNS repair","BIOS update"],1,"It frees disk space automatically."],
+["Reset this PC does?",["Deletes BIOS","Reinstalls Windows","Formats USB","Deletes RAM"],1,"It reinstalls Windows."],
+["Reliability Monitor tracks?",["Hardware failure","System stability","DNS zones","RAID"],1,"It shows stability history."],
+["Virtual Desktop allows?",["More RAM","Separate workspaces","BIOS edit","Firewall"],1,"Virtual desktops improve multitasking."],
+["Event Viewer shows?",["Hardware only","System logs","BIOS config","Cache"],1,"Event Viewer displays logs."],
+["DISM repairs?",["Network","Windows image","RAM","BIOS"],1,"DISM fixes Windows image corruption."],
+["Windows Hello supports?",["Password only","Biometric login","DNS","GPO"],1,"Windows Hello supports fingerprint/face login."],
+
+/* ================= WINDOWS SERVER (29–44) ================= */
+
+["AD DS provides?",["File storage","Authentication","RAID","BIOS"],1,"AD DS centralizes authentication."],
+["FSMO total roles?",["3","4","5","6"],2,"There are 5 FSMO roles."],
+["Global Catalog stores?",["Full DB","Partial attributes","DNS only","GPO only"],1,"GC stores partial object attributes."],
+["OU is used to?",["Store files","Organize AD objects","Store DNS","Store BIOS"],1,"OU organizes and applies GPO."],
+["SYSVOL stores?",["User data","GPOs","DNS zones","DHCP leases"],1,"SYSVOL stores GPO templates."],
+["DHCP assigns?",["MAC","IP address","DNS zone","OU"],1,"DHCP assigns IP addresses."],
+["DORA stands for?",["Discover Offer Request Acknowledge","Domain Offer Reply Assign","Data Order Reply Accept","None"],0,"DORA is DHCP handshake."],
+["Primary DNS zone is?",["Writable","Read-only","Backup only","Cache only"],0,"Primary zone allows changes."],
+["A record maps?",["IP to name","Name to IP","Alias","Mail"],1,"A record maps hostname to IPv4."],
+["GPO refresh default?",["30 min","90 min","24 hr","5 min"],1,"Default is 90 minutes."],
+["Loopback processing applies?",["User GPO by computer","File share","RAID","DNS"],0,"Loopback applies user settings by computer."],
+["Quota management controls?",["CPU","Disk usage","RAM","DNS"],1,"Quota limits disk space usage."],
+["DFS provides?",["RAID","Unified namespace","DHCP","Cache"],1,"DFS unifies shared folders."],
+["PDC Emulator handles?",["Time sync","RAID","DNS replication","Cache"],0,"PDC handles time sync & password updates."],
+["Schema Master controls?",["IP","Object definitions","Cache","Ports"],1,"Schema Master manages AD schema."],
+["Reservation in DHCP ensures?",["Dynamic IP","Fixed IP","DNS record","RAID"],1,"Reservation binds MAC to IP."],
+
+/* ================= LINUX (45–60) ================= */
+
+["Root directory is?",["/home","/","/etc","/root"],1,"/ is top-level directory."],
+["chmod changes?",["Ownership","Permissions","IP","DNS"],1,"chmod modifies file permissions."],
+["Default file permission before umask?",["777","666","755","700"],1,"Files default to 666."],
+["ls -l shows?",["Cache","Permissions","DNS","RAID"],1,"ls -l shows file permissions."],
+["Sticky bit prevents?",["Execution","Deletion by others","Read access","Write access"],1,"Sticky restricts deletion."],
+["/etc contains?",["User data","Configuration files","Logs","Bootloader"],1,"/etc stores system configs."],
+["mkfs creates?",["User","Filesystem","GPO","Cache"],1,"mkfs formats disk."],
+["df shows?",["Directory size","Disk usage","DNS zone","RAM"],1,"df shows filesystem usage."],
+["du shows?",["Disk free","Directory size","IP","RAID"],1,"du shows directory usage."],
+["Hard link shares?",["Name","Inode","Path","Permission"],1,"Hard links share inode."],
+["Systemd manages?",["Boot process","Cache","BIOS","DNS"],0,"Systemd manages services."],
+["fstab stores?",["Temporary mount","Permanent mounts","DNS","RAM"],1,"fstab defines mount config."],
+["grep is used to?",["Format disk","Search text","Change permission","Encrypt"],1,"grep searches text patterns."],
+["chmod 755 means?",["Owner full","Group full","Others full","All full"],0,"Owner rwx, others rx."],
+["SELinux provides?",["Disk cleanup","Security enforcement","RAID","DNS"],1,"SELinux enforces security policies."],
+["crontab schedules?",["Boot","Tasks","DNS","Cache"],1,"crontab schedules tasks."],
+
+/* ================= NETWORKING (61–80) ================= */
+
+["OSI model layers?",["4","5","6","7"],3,"OSI has 7 layers."],
+["Router works at?",["Layer 2","Layer 3","Layer 4","Layer 1"],1,"Router operates at Network layer."],
+["Switch forwards using?",["IP","MAC","DNS","Port"],1,"Switch uses MAC table."],
+["Subnet mask /24 equals?",["255.0.0.0","255.255.255.0","255.255.0.0","255.255.255.128"],1,"/24 = 255.255.255.0."],
+["RIP uses metric?",["Bandwidth","Delay","Hop count","Cost"],2,"RIP uses hop count."],
+["OSPF is?",["Distance vector","Link-state","Hybrid","None"],1,"OSPF is link-state."],
+["CSMA/CD used in?",["WiFi","Ethernet","Bluetooth","WAN"],1,"Ethernet uses CSMA/CD."],
+["Ping uses?",["TCP","UDP","ICMP","ARP"],2,"Ping uses ICMP."],
+["ACL filters?",["Traffic","Disk","RAM","BIOS"],0,"ACL filters network traffic."],
+["NAT converts?",["Private to public IP","MAC to IP","DNS","RAM"],0,"NAT translates IP addresses."],
+["VLAN separates?",["Broadcast domains","CPU","Cache","RAM"],0,"VLAN separates broadcast domains."],
+["Gateway used for?",["Local access","External access","DNS only","Cache"],1,"Gateway routes outside network."],
+["IPv4 length?",["16 bit","32 bit","64 bit","128 bit"],1,"IPv4 is 32-bit."],
+["Private IP example?",["8.8.8.8","192.168.1.1","1.1.1.1","9.9.9.9"],1,"192.168.x.x is private."],
+["STP prevents?",["Loops","IP conflict","DNS failure","RAID crash"],0,"STP prevents switching loops."],
+["DNS resolves?",["IP to name","Name to IP","MAC","RAM"],1,"DNS resolves name to IP."],
+["DHCP provides?",["IP automatically","DNS zone","GPO","Cache"],0,"DHCP auto assigns IP."],
+["BGP used in?",["LAN","Internet routing","RAID","RAM"],1,"BGP routes internet traffic."],
+["CIDR allows?",["Classful routing","Classless routing","No routing","Static only"],1,"CIDR enables classless addressing."],
+["Port 80 used for?",["HTTPS","HTTP","FTP","SSH"],1,"Port 80 is HTTP."],
+
+/* ================= ITIL (81–88) ================= */
+
+["ITIL stands for?",["Information Tech Infrastructure Library","Internet Tech Library","Integrated Tech Log","Internal Tool Log"],0,"ITIL is IT service management framework."],
+["Incident management goal?",["Root cause","Restore service","Upgrade server","Audit"],1,"Incident restores service quickly."],
+["Problem management goal?",["Fix quickly","Identify root cause","Reboot","Delete"],1,"Problem finds root cause."],
+["Change Enablement was?",["Old change mgmt","Audit","Backup","RAID"],0,"Change mgmt renamed in ITIL4."],
+["SLA defines?",["Security","Service level target","Storage","Schema"],1,"SLA defines performance target."],
+["SVS stands for?",["Service Value System","System Value Service","Service Virtual System","None"],0,"SVS is ITIL 4 core model."],
+["Continual improvement is?",["One-time","Ongoing","Optional","Temporary"],1,"ITIL encourages continual improvement."],
+["KPI measures?",["Cache","Performance","RAID","RAM"],1,"KPI measures service performance."],
+
+/* ================= MISCELLANEOUS (89–100) ================= */
+
+["Project management tool example?",["Excel","MS Project","BIOS","Cache"],1,"MS Project is PM tool."],
+["Virtualization allows?",["Multiple VMs","Multiple BIOS","Multiple RAM only","None"],0,"Virtualization runs multiple VMs."],
+["Hypervisor type 1 runs?",["On OS","On hardware","On BIOS","On cache"],1,"Type 1 runs directly on hardware."],
+["Cloud IaaS provides?",["Hardware resources","Software only","DNS only","GPO"],0,"IaaS provides virtual infrastructure."],
+["Backup type that copies only changes?",["Full","Incremental","Mirror","Clone"],1,"Incremental backs up changes only."],
+["Firewall blocks?",["Authorized traffic","Unauthorized traffic","RAM","BIOS"],1,"Firewall blocks unauthorized traffic."],
+["Encryption protects?",["Performance","Data confidentiality","Speed","Cache"],1,"Encryption secures data."],
+["Two-factor authentication uses?",["Password only","Two verification methods","DNS","RAID"],1,"2FA requires two proofs."],
+["Load balancing distributes?",["Disk","Network traffic","RAM","BIOS"],1,"Load balancing spreads traffic."],
+["Uptime measures?",["Storage","Availability","Cache","DNS"],1,"Uptime indicates system availability."],
+["Latency measures?",["Speed","Delay","Capacity","RAM"],1,"Latency is network delay."],
+["Throughput measures?",["Delay","Data transfer rate","BIOS","Cache"],1,"Throughput is transfer speed."]
+];
+
+/* SHUFFLE */
+questions.sort(()=>Math.random()-0.5);
+
+/* RENDER */
+const form=document.getElementById("quizForm");
+const nav=document.getElementById("nav");
+
+questions.forEach((q,i)=>{
+  nav.innerHTML+=`
+    <div class="nav-btn" id="nav${i}" onclick="go(${i})">${i+1}</div>
+  `;
+
+  form.innerHTML+=`
+    <div class="question" id="q${i}">
+      <b>${i+1}. ${q[0]}</b>
+      <div class="options">
+        ${q[1].map((o,j)=>`
+          <label>
+            <input type="radio" name="q${i}" value="${j}" onchange="mark(${i})">
+            ${o}
+          </label>
+        `).join("")}
+      </div>
+      <div class="solution" id="sol${i}">
+        <b>Answer:</b> ${q[1][q[2]]}<br>
+        <b>Explanation:</b> ${q[3]}
+      </div>
+    </div>
+  `;
+});
+
+form.innerHTML+=`<button type="button" onclick="submitQuiz()">Submit</button>`;
+
+/* INTERACTION */
+function go(i){
+  document.getElementById("q"+i).scrollIntoView({behavior:"smooth"});
+}
+
+function mark(i){
+  document.getElementById("nav"+i).classList.add("answered");
+  updateProgress();
+}
+
+function updateProgress(){
+  const done=document.querySelectorAll(".answered").length;
+  document.getElementById("progressBar").style.width=
+    (done/questions.length*100)+"%";
+}
+
+/* SUBMIT */
+function submitQuiz(auto=false){
+  submitted=true;
+  clearInterval(timer);
+  let score=0;
+
+  questions.forEach((q,i)=>{
+    const sel=document.querySelector(`input[name="q${i}"]:checked`);
+    const sol=document.getElementById("sol"+i);
+    const navBtn=document.getElementById("nav"+i);
+    sol.style.display="block";
+
+    if(sel && Number(sel.value)===q[2]){
+      score++;
+      sol.classList.add("correct");
+      navBtn.className="nav-btn correct";
+    }else{
+      sol.classList.add("wrong");
+      navBtn.className="nav-btn wrong";
+    }
+  });
+
+  const res=document.getElementById("result");
+  res.style.display="block";
+  res.innerHTML=`
+    <h2>Result</h2>
+    <p><b>Score:</b> ${score}/${questions.length}</p>
+    <p><b>Percentage:</b> ${(score/questions.length*100).toFixed(0)}%</p>
+    ${auto?"<b>Auto-submitted (Time Over)</b>":""}
+  `;
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+</script>
+
+</body>
+</html>

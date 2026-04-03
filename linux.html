@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Linux RHEL Filesystem – Interactive Mock Test</title>
+
+<style>
+:root{
+/* LIGHT MODE */
+--bg:#F5F5DC;
+--card:#ffffff;
+--panel:#f1f1e6;
+--border:#d6d6c8;
+
+--text:#301934;
+--muted:#6b5f73;
+
+--accent:#9F2B68;
+--cta:#CC5500;
+
+/* STATUS */
+--green:#2e7d32;
+--red:#c62828;
+--yellow:#CC5500;
+}
+
+/* DARK MODE */
+[data-theme="dark"]{
+--bg:#301934;
+--card:#3a1f47;
+--panel:#2a1635;
+--border:#4a2b5e;
+
+--text:#F5F5DC;
+--muted:#cbbfd1;
+
+--accent:#9F2B68;
+--cta:#CC5500;
+}
+*{box-sizing:border-box}
+body{
+margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;
+background:var(--bg);color:var(--text);
+}
+header{
+  position:sticky;
+  top:0;
+  z-index:100;
+
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+
+  padding:6px 16px;        /* 🔑 small padding */
+  height:64px;             /* 🔑 fixed compact height */
+
+  background:linear-gradient(
+    180deg,
+    rgba(0,0,0,0.35),
+    rgba(0,0,0,0.15)
+  );
+
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(8px);
+}
+.timer{color:var(--green);font-weight:600;font-size:18px}
+main{display:flex;max-width:1300px;margin:0 auto}
+aside{
+width:260px;border-right:1px solid var(--border);
+padding:20px;position:sticky;top:64px;height:calc(100vh - 64px);overflow:auto;
+}
+aside h3{margin-top:0;font-size:16px;color:var(--muted)}
+.grid{
+display:grid;grid-template-columns:repeat(5,1fr);gap:8px;
+}
+.nav-btn{
+padding:8px;border-radius:6px;border:1px solid var(--border);
+background:var(--panel);color:var(--muted);cursor:pointer;
+font-size:13px;text-align:center;
+}
+.nav-btn.answered{border-color:var(--yellow);color:var(--yellow)}
+.nav-btn.correct{border-color:var(--green);color:var(--green)}
+.nav-btn.wrong{border-color:var(--red);color:var(--red)}
+section{
+flex:1;padding:30px 40px;
+}
+.progress{
+height:6px;background:#111;border-radius:6px;overflow:hidden;margin-bottom:20px;
+}
+.progress div{
+height:100%;width:0;background:linear-gradient(90deg,#2ec866,#1ba94c);
+transition:.3s;
+}
+.question{
+background:var(--card);border:1px solid var(--border);
+border-radius:10px;padding:22px;margin-bottom:24px;
+}
+.question b{display:block;margin-bottom:14px}
+.options label{
+display:block;padding:10px 12px;margin-bottom:8px;
+border-radius:8px;background:var(--panel);
+border:1px solid var(--border);cursor:pointer;transition:.2s;
+}
+.options label:hover{border-color:var(--green)}
+input{margin-right:10px;accent-color:var(--green)}
+.solution{
+display:none;margin-top:14px;padding:14px;
+background:var(--panel);border-left:4px solid var(--border);
+border-radius:8px;color:var(--muted);font-size:14px;
+}
+.correct{border-left-color:var(--green)}
+.wrong{border-left-color:var(--red)}
+button{
+display:block;margin:50px auto;padding:14px 48px;
+font-size:16px;font-weight:600;
+background:linear-gradient(135deg,#2ec866,#1ba94c);
+color:#06130c;border:none;border-radius:8px;cursor:pointer;
+}
+.result{
+display:none;background:var(--card);border-left:6px solid var(--green);
+padding:26px;border-radius:10px;margin-bottom:40px;
+}
+button:hover{
+  transform:translateY(-1px);
+  box-shadow:0 6px 18px rgba(0,0,0,.2);
+}
+
+.nav-btn{
+  transition:.2s ease;
+}
+
+.nav-btn:hover{
+  background:var(--accent);
+  color:#fff;
+  border-color:var(--accent);
+}
+
+.options label{
+  transition:.2s ease;
+}
+
+.options input:checked + span{
+  color:var(--accent);
+}
+
+.question{
+  box-shadow:0 10px 30px rgba(0,0,0,.15);
+}
+header b{
+  font-size:24px;
+  font-weight:600;
+}
+
+.timer{
+  font-size:14px;
+  font-weight:600;
+}
+</style>
+</head>
+
+<body data-theme="dark">
+
+<header>
+  <b>Linux RHEL Filesystem & Partition Mock Test</b>
+  <div class="timer" id="timer">60:00</div>
+</header>
+
+<main>
+  <aside>
+    <h3>Questions</h3>
+    <div class="grid" id="nav"></div>
+  </aside>
+
+  <section>
+    <div class="progress"><div id="progressBar"></div></div>
+    <div id="result" class="result"></div>
+    <form id="quizForm"></form>
+  </section>
+</main>
+
+<script>
+/* TIMER */
+let time=3600,submitted=false;
+const timerEl=document.getElementById("timer");
+
+const timer=setInterval(()=>{
+  time--;
+  timerEl.textContent=
+    String(Math.floor(time/60)).padStart(2,'0')+":"+
+    String(time%60).padStart(2,'0');
+
+  if(time<=0 && !submitted){
+    clearInterval(timer);
+    submitQuiz(true);
+  }
+},1000);
+
+/* QUESTIONS */
+const questions = [
+["What does '/' represent in Linux?",["Home directory","Root directory","Current directory","Boot directory"],1,"All filesystems start from root '/'"],
+["Which permission allows entering a directory?",["Read","Write","Execute","Sticky"],2,"Execute allows cd"],
+["Permission rwxr-xr-- numeric?",["754","755","744","764"],0,"7-5-4"],
+["Which directory stores configuration files?",["/bin","/etc","/usr","/var"],1,"/etc holds configs"],
+["Delete file inside directory requires?",["Read","Write","Execute","Sticky"],1,"Write on directory"],
+["What does 'd' indicate in ls -l?",["Device","Directory","Daemon","Disk"],1,"d = directory"],
+["Default file permission before umask?",["777","666","755","644"],1,"Files start as 666"],
+["Default directory permission before umask?",["777","666","755","700"],0,"Directories start as 777"],
+["What does sticky bit do?",["Prevents execution","Restricts deletion","Locks directory","Hides files"],1,"Only owner can delete"],
+["Where is sticky bit commonly used?",["/home","/tmp","/root","/var"],1,"/tmp"],
+
+["Which command lists block devices?",["df","lsblk","mount","du"],1,"lsblk"],
+["Which file stores permanent mounts?",["/etc/mtab","/etc/fstab","/proc/mounts","/boot/grub2"],1,"fstab"],
+["Which filesystem is default in RHEL?",["ext4","xfs","btrfs","vfat"],1,"XFS"],
+["Command to mount all from fstab?",["mount","mount -a","df -h","lsblk"],1,"mount -a"],
+["Which shows disk usage by filesystem?",["du","df","lsblk","stat"],1,"df"],
+["Which shows directory size?",["df","du","lsblk","mount"],1,"du"],
+["What does blkid show?",["Usage","UUID","Permissions","Inodes"],1,"UUID"],
+["Temporary mount point?",["/opt","/mnt","/srv","/media"],1,"/mnt"],
+["Mount option to avoid boot failure?",["nofail","nodev","ro","noexec"],0,"nofail"],
+["Read-only mount option?",["rw","ro","noexec","nodev"],1,"ro"],
+
+["What is an inode?",["Filename","Metadata","File data","Directory"],1,"Metadata"],
+["Hard links share?",["Filename","Inode","Path","Permissions"],1,"Same inode"],
+["Symbolic link breaks when?",["Target deleted","Permission change","Owner change","Move directory"],0,"Target removed"],
+["Which FS supports online resize?",["ext2","xfs","vfat","iso9660"],1,"XFS"],
+["Command to create ext4 FS?",["mkfs","mkfs.ext4","fsck","mount"],1,"mkfs.ext4"],
+["Command to check FS consistency?",["df","fsck","mount","du"],1,"fsck"],
+["Where are logs stored?",["/etc","/var/log","/proc","/tmp"],1,"/var/log"],
+["Which permission lists filenames?",["Read","Write","Execute","Sticky"],0,"Read"],
+["Without execute on directory?",["No list","No cd","No delete","No write"],1,"Cannot enter"],
+["Command to view inode number?",["ls -i","stat","df","du"],0,"ls -i"],
+
+["Partition table on UEFI?",["MBR","GPT","NTFS","FAT32"],1,"GPT"],
+["Which tool edits partitions?",["mkfs","fdisk","mount","df"],1,"fdisk"],
+["Which command shows disk layout?",["lsblk","df","du","stat"],0,"lsblk"],
+["Filesystem label set by?",["tune2fs","blkid","mount","df"],0,"tune2fs"],
+["Which FS does NOT support Unix perms?",["xfs","ext4","vfat","btrfs"],2,"vfat"],
+["Command to mount device?",["mount","df","du","ls"],0,"mount"],
+["UUID recommended in fstab?",["Yes","No"],0,"More stable"],
+["Which directory contains user homes?",["/usr","/home","/root","/var"],1,"/home"],
+["Root user home directory?",["/home/root","/root","/usr/root","/admin"],1,"/root"],
+["Binary commands stored in?",["/bin","/etc","/var","/home"],0,"/bin"],
+
+["Which permission is 700?",["rwx------","rw-r--r--","rwxr-xr-x","rw-------"],0,"Owner full"],
+["Command to change permissions?",["chown","chmod","chgrp","umask"],1,"chmod"],
+["Remove group write?",["chmod g-w","chmod o-w","chmod u-w","chmod -w"],0,"g-w"],
+["Recursive permission change?",["-a","-x","-R","-r"],2,"-R"],
+["Permission 755 means?",["Owner rwx","Group rw","Others r","All execute"],0,"Owner full"],
+["Which allows file execution?",["Read","Write","Execute","Sticky"],2,"Execute"],
+["Which prevents execution from mount?",["noexec","nosuid","nodev","ro"],0,"noexec"],
+["Which disables device files?",["nodev","nosuid","noexec","rw"],0,"nodev"],
+["Which disables SUID?",["nosuid","nodev","noexec","ro"],0,"nosuid"],
+["Which FS supports large files best?",["ext2","xfs","vfat","iso"],1,"XFS"]
+];
+/* SHUFFLE */
+questions.sort(()=>Math.random()-0.5);
+
+/* RENDER */
+const form=document.getElementById("quizForm");
+const nav=document.getElementById("nav");
+
+questions.forEach((q,i)=>{
+  nav.innerHTML+=`
+    <div class="nav-btn" id="nav${i}" onclick="go(${i})">${i+1}</div>
+  `;
+
+  form.innerHTML+=`
+    <div class="question" id="q${i}">
+      <b>${i+1}. ${q[0]}</b>
+      <div class="options">
+        ${q[1].map((o,j)=>`
+          <label>
+            <input type="radio" name="q${i}" value="${j}" onchange="mark(${i})">
+            ${o}
+          </label>
+        `).join("")}
+      </div>
+      <div class="solution" id="sol${i}">
+        <b>Answer:</b> ${q[1][q[2]]}<br>
+        <b>Explanation:</b> ${q[3]}
+      </div>
+    </div>
+  `;
+});
+
+form.innerHTML+=`<button type="button" onclick="submitQuiz()">Submit</button>`;
+
+/* INTERACTION */
+function go(i){
+  document.getElementById("q"+i).scrollIntoView({behavior:"smooth"});
+}
+
+function mark(i){
+  document.getElementById("nav"+i).classList.add("answered");
+  updateProgress();
+}
+
+function updateProgress(){
+  const done=document.querySelectorAll(".answered").length;
+  document.getElementById("progressBar").style.width=
+    (done/questions.length*100)+"%";
+}
+
+/* SUBMIT */
+function submitQuiz(auto=false){
+  submitted=true;
+  clearInterval(timer);
+  let score=0;
+
+  questions.forEach((q,i)=>{
+    const sel=document.querySelector(`input[name="q${i}"]:checked`);
+    const sol=document.getElementById("sol"+i);
+    const navBtn=document.getElementById("nav"+i);
+    sol.style.display="block";
+
+    if(sel && Number(sel.value)===q[2]){
+      score++;
+      sol.classList.add("correct");
+      navBtn.className="nav-btn correct";
+    }else{
+      sol.classList.add("wrong");
+      navBtn.className="nav-btn wrong";
+    }
+  });
+
+  const res=document.getElementById("result");
+  res.style.display="block";
+  res.innerHTML=`
+    <h2>Result</h2>
+    <p><b>Score:</b> ${score}/${questions.length}</p>
+    <p><b>Percentage:</b> ${(score/questions.length*100).toFixed(0)}%</p>
+    ${auto?"<b>Auto-submitted (Time Over)</b>":""}
+  `;
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+</script>
+
+</body>
+</html>
