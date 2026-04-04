@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Microsoft Azure 104 Test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="stylesheet" href="../styles/styles.css">
+</head>
+
+<body data-theme="dark">
+
+<header>
+  <b>Microsoft Azure 104 Mock Test</b>
+  <button id="themeToggle" class="icon-btn"></button>
+  <div id="timer">60:00</div>
+</header>
+
+<main>
+  <aside>
+    <h3>Questions</h3>
+    <div id="nav" class="grid"></div>
+  </aside>
+
+  <section>
+    <div class="progress"><div id="progressBar"></div></div>
+    <div id="result" class="result"></div>
+    <form id="quizForm"></form>
+  </section>
+</main>
+
+<!-- ORDER MATTERS -->
+<script src="../scripts/script.js"></script>
+<script src="../data/azure.js"></script>
+<script src="../scripts/testEngine.js"></script>
+
+<script>
+  initTest(window.rawQuestions);
+</script>
+
+</body>
+</html>
