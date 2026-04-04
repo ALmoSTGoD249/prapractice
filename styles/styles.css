@@ -1,25 +1,21 @@
 :root{
   --bg:#0b1220;
-  --glass:rgba(255,255,255,0.05);
-  --border:rgba(255,255,255,0.12);
+  --glass:rgba(255,255,255,0.06);
+  --border:rgba(255,255,255,0.10);
   --text:#e5e7eb;
   --muted:#9ca3af;
   --accent:#6366f1;
 
-  --green:#22c55e;
-  --red:#ef4444;
-  --yellow:#f59e0b;
-
-  --blur:16px;
+  --blur:18px;
 }
 
 [data-theme="light"]{
-  --bg:#f3f4f6;
-  --glass:rgba(255,255,255,0.7);
-  --border:rgba(0,0,0,0.08);
-  --text:#111827;
+  --bg:#e8ecf1;                    
+  --glass:rgba(255,255,255,0.55);  
+  --border:rgba(0,0,0,0.06);       
+  --text:#1f2937;                  
   --muted:#6b7280;
-  --accent:#6366f1;
+  --accent:#5b5fe6;                
 }
 
 /* RESET */
@@ -32,9 +28,14 @@ body{
   font-family:Inter,Segoe UI,Arial,sans-serif;
   background:var(--bg);
   color:var(--text);
+
+  /* subtle Apple depth */
+  background-image:
+    radial-gradient(circle at 20% 20%, #6366f110, transparent 40%),
+    radial-gradient(circle at 80% 30%, #22d3ee08, transparent 40%);
 }
 
-/* HEADER (shared) */
+/* HEADER */
 header{
   position:sticky;
   top:0;
@@ -54,24 +55,25 @@ header{
 
 header b{
   font-size:15px;
+  letter-spacing:.3px;
 }
 
 /* BUTTON */
 .icon-btn{
   background:var(--glass);
   border:1px solid var(--border);
-  border-radius:10px;
-  padding:8px 10px;
+  border-radius:12px;
+  padding:8px 12px;
   cursor:pointer;
   color:var(--text);
-  transition:.2s;
+  transition:.25s ease;
 }
 
 .icon-btn:hover{
   border-color:var(--accent);
 }
 
-/* DASHBOARD ONLY */
+/* MAIN */
 main{
   display:flex;
   justify-content:center;
@@ -79,59 +81,136 @@ main{
 
 .container{
   width:100%;
-  max-width:1100px;
-  padding:60px 24px;
+  max-width:960px;
+  padding:80px 24px;
   text-align:center;
 }
 
+/* TYPOGRAPHY */
 h1{
-  font-size:32px;
+  font-size:34px;
   margin-bottom:10px;
+  font-weight:600;
 }
 
 p{
   color:var(--muted);
-  margin-bottom:40px;
+  margin-bottom:50px;
+  font-size:15px;
 }
 
-/* CARDS */
-.cards{
+/* SECTION */
+.section{
+  margin-top:60px;
+  text-align:left;
+}
+
+.section h2{
+  font-size:13px;
+  color:var(--muted);
+  margin-bottom:14px;
+  letter-spacing:.6px;
+  text-transform:uppercase;
+}
+
+/* GRID SYSTEM */
+.grid{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-  gap:24px;
+  gap:20px;
 }
 
+.grid.large{
+  grid-template-columns:repeat(2, 1fr);
+}
+
+.grid.small{
+  grid-template-columns:repeat(3, 1fr);
+}
+
+/* responsive */
+@media (max-width:900px){
+  .grid.large{grid-template-columns:1fr;}
+  .grid.small{grid-template-columns:repeat(2,1fr);}
+}
+
+@media (max-width:600px){
+  .grid.small{grid-template-columns:1fr;}
+}
+
+/* CARD (APPLE GLASS) */
 .card{
+  position:relative;
+
   background:var(--glass);
   border:1px solid var(--border);
-  border-radius:16px;
+  border-radius:20px;
+
   padding:26px;
   text-decoration:none;
   color:var(--text);
 
   backdrop-filter:blur(var(--blur));
-  transition:.25s ease;
+  -webkit-backdrop-filter:blur(var(--blur));
+
+  transition:all .3s ease;
 }
 
+/* soft light reflection */
+.card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:20px;
+
+  background:linear-gradient(
+    120deg,
+    rgba(255,255,255,0.15),
+    transparent 40%
+  );
+
+  opacity:.25;
+  pointer-events:none;
+}
+
+/* large cards */
+.grid.large .card{
+  min-height:140px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+/* small cards */
+.grid.small .card{
+  min-height:110px;
+}
+
+/* hover (subtle Apple feel) */
 .card:hover{
-  transform:translateY(-6px);
-  border-color:var(--accent);
+  transform:translateY(-4px);
+  border-color:rgba(255,255,255,0.2);
   box-shadow:0 20px 40px rgba(0,0,0,0.25);
 }
 
+/* ICON */
 .card svg{
-  width:40px;
-  height:40px;
-  margin-bottom:14px;
+  width:34px;
+  height:34px;
+  margin-bottom:12px;
+  opacity:.85;
 }
 
+/* TEXT */
 .card h3{
-  margin:10px 0 6px;
+  margin:6px 0 4px;
+  font-size:16px;
+  font-weight:600;
 }
 
 .card span{
+  font-size:13px;
   color:var(--muted);
-  font-size:14px;
+  line-height:1.4;
 }
 
 /* SCROLLBAR */
